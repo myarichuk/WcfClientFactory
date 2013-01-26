@@ -55,6 +55,13 @@
     <Compile Include="WcfClientProxyFactory.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetFileName) temp.dll
+"$(SolutionDir)\Utilities\ILRepack\ilrepack.exe" /out:$(TargetFileName) temp.dll fasterflect.dll fluentil.dll
+del temp.dll
+del fasterflect.*
+del fluentil*.dll</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
