@@ -25,6 +25,7 @@ namespace WcfClientFactory
         private const string SERVICE_CLIENT_CONSTRUCTOR_PARAMETERS_FIELD_NAME = "m_ServiceClientConstructorParameters";
         private const string CLIENT_PROXY_TYPE_NAME = "WcfServiceProxy";
         private const string METHOD_RESULT_VARIABLE_NAME = "methodResult";
+        private const string OPERATION_CONTEXT_SCOPE_VARIABLE_NAME = "operationContextScope";
         private const string SERVICE_CLIENT_VARIABLE_NAME = "serviceClientProxy";
 
         #endregion
@@ -128,11 +129,14 @@ namespace WcfClientFactory
             clientProxyMethod.WithParameters(methodParameters)
                              .WithVariable(m_ProxyClientChannelType, SERVICE_CLIENT_VARIABLE_NAME)
                              .WithVariable(interfaceMethodToProxy.ReturnType, METHOD_RESULT_VARIABLE_NAME)
+                             .WithVariable(typeof(OperationContextScope),OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
                              .Returns(interfaceMethodToProxy.ReturnType)
                              .Try(body: m => ClientProxyMethodBody(m,interfaceMethodToProxy),
-                                  catches:IL.Catch<Exception>(m => m.Throw())
-                                  //@finally: m => m.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
-                                  //                .Call<IDisposable>("Dispose")
+                                  catches:IL.Catch<Exception>(m => m.Throw()),
+                                  @finally: m => m.Ldloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
+                                                  .Call<IDisposable>("Dispose")
+                                                  .Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                  .Call<IDisposable>("Dispose")
                                    )
                              .Ldloc(METHOD_RESULT_VARIABLE_NAME)
                              .Ret();
@@ -146,6 +150,10 @@ namespace WcfClientFactory
                               proxyClientClassConstructor,
                               proxyClientClassConstructorParameters)
                     .Stloc(SERVICE_CLIENT_VARIABLE_NAME)
+                    .Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                    .CallGet<ClientBase<TServiceInterface>>("InnerChannel")
+                    .Newobj<OperationContextScope>(typeof(IContextChannel))
+                    .Stloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
                     .Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
                     .Callvirt(m_ClientChannelPropertyInfo.GetGetMethod())
                     .Repeater(1, methodInfoToImplement.Parameters().Count, 1,

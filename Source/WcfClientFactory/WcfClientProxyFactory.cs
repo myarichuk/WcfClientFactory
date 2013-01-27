@@ -40,8 +40,8 @@ namespace WcfClientFactory
                                                     .Create()
                                                     .WithConstructorParameters(constructorParams)
                                                     .GenerateType();
-            
-            return (TServiceInterface)proxyClientType.CreateInstance(constructorParams);            
+                        
+            return (TServiceInterface)Activator.CreateInstance(proxyClientType, constructorParams);
         }
     }
 }
