@@ -7,6 +7,8 @@ namespace WcfClientFactory
 {
     public static class WcfClientProxyFactory
     {
+        private readonly static Action<OperationContext> EmptyCallback = (oc) => { };
+
         /// <summary>
         /// Create WCF service proxy client.
         /// </summary>
@@ -16,7 +18,24 @@ namespace WcfClientFactory
         public static TServiceInterface CreateInstance<TServiceInterface>(params object[] constructorParams)
             where TServiceInterface : class
         {
-            return CreateInstance<TServiceInterface, ClientBase<TServiceInterface>>(constructorParams);
+            return CreateInstance<TServiceInterface, ClientBase<TServiceInterface>>(EmptyCallback,EmptyCallback,constructorParams);
+        }
+
+        /// <summary>
+        /// Create WCF service proxy client.
+        /// </summary>
+        /// <typeparam name="TServiceInterface">service contract interface</typeparam>
+        /// <param name="beforeOperationCallback">delegate that will be executed before each operation</param>
+        /// <param name="afterOperationCallback">delegate that will be executed after each operation</param>
+        /// <param name="constructorParams">constructor parameters for  ClientBase`1 -&gt; </param>
+        /// <returns></returns>
+        public static TServiceInterface CreateInstance<TServiceInterface>(
+            Action<OperationContext> beforeOperationCallback,
+            Action<OperationContext> afterOperationCallback,
+            params object[] constructorParams)
+            where TServiceInterface : class
+        {
+            return CreateInstance<TServiceInterface, ClientBase<TServiceInterface>>(beforeOperationCallback,afterOperationCallback,constructorParams);
         }
 
         /// <summary>
@@ -27,6 +46,25 @@ namespace WcfClientFactory
         /// <param name="constructorParams">constructor parameters for TBaseClass</param>
         /// <returns>wcf proxy client with channel class inherited from <see cref="TBaseClass">TBaseClass</see></returns>
         public static TServiceInterface CreateInstance<TServiceInterface, TBaseClass>(params object[] constructorParams)
+            where TBaseClass : ClientBase<TServiceInterface>
+            where TServiceInterface : class
+        {
+            return CreateInstance<TServiceInterface, TBaseClass>(EmptyCallback,EmptyCallback, constructorParams);
+        }
+
+        /// <summary>
+        /// Create WCF service proxy client
+        /// </summary>
+        /// <typeparam name="TServiceInterface">service contract interface</typeparam>
+        /// <typeparam name="TBaseClass">channel base class that inherits from ClientBase</typeparam>
+        /// <param name="beforeOperationCallback">delegate that will be executed before each operation</param>
+        /// <param name="afterOperationCallback">delegate that will be executed after each operation</param>
+        /// <param name="constructorParams">constructor parameters for TBaseClass</param>
+        /// <returns>wcf proxy client with channel class inherited from <see cref="TBaseClass">TBaseClass</see></returns>
+        public static TServiceInterface CreateInstance<TServiceInterface, TBaseClass>(
+                    Action<OperationContext> beforeOperationCallback,
+                    Action<OperationContext> afterOperationCallback,
+                    params object[] constructorParams)
             where TBaseClass : ClientBase<TServiceInterface>
             where TServiceInterface : class
         {
@@ -41,7 +79,12 @@ namespace WcfClientFactory
                                                     .WithConstructorParameters(constructorParams)
                                                     .GenerateType();
                         
-            return (TServiceInterface)Activator.CreateInstance(proxyClientType, constructorParams);
+            var clientInstance = (TServiceInterface)Activator.CreateInstance(proxyClientType, constructorParams);
+            clientInstance.CallMethod(WcfClientProxyTypeFactory<TServiceInterface, TBaseClass>.INIT_CALLBACKS_METHOD_NAME,
+                beforeOperationCallback,
+                afterOperationCallback);
+
+            return clientInstance;
         }
     }
 }

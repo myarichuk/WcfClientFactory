@@ -23,10 +23,14 @@ namespace WcfClientFactory
         #region Constants
 
         private const string SERVICE_CLIENT_CONSTRUCTOR_PARAMETERS_FIELD_NAME = "m_ServiceClientConstructorParameters";
+        private const string BEFORE_OPERATION_CALLBACK_FIELD_NAME = "m_BeforeOperationCallback";
+        private const string AFTER_OPERATION_CALLBACK_FIELD_NAME = "m_AfterOperationCallback";
         private const string CLIENT_PROXY_TYPE_NAME = "WcfServiceProxy";
         private const string METHOD_RESULT_VARIABLE_NAME = "methodResult";
         private const string OPERATION_CONTEXT_SCOPE_VARIABLE_NAME = "operationContextScope";
         private const string SERVICE_CLIENT_VARIABLE_NAME = "serviceClientProxy";
+        public const string INIT_CALLBACKS_METHOD_NAME = "InitCallbacks";
+        private const string OPERATION_CONTEXT_VARIABLE_NAME = "currentOperationContext";
 
         #endregion
 
@@ -48,10 +52,21 @@ namespace WcfClientFactory
 
             m_ClientProxyTypeInfo = IL.NewType(CLIENT_PROXY_TYPE_NAME)
                                       .Implements<TServiceInterface>()
-                                      .WithField(SERVICE_CLIENT_CONSTRUCTOR_PARAMETERS_FIELD_NAME, typeof(object[]));
+                                      .WithField(SERVICE_CLIENT_CONSTRUCTOR_PARAMETERS_FIELD_NAME, typeof(object[]))
+                                      .WithField(BEFORE_OPERATION_CALLBACK_FIELD_NAME, typeof(Action<OperationContext>))
+                                      .WithField(AFTER_OPERATION_CALLBACK_FIELD_NAME, typeof(Action<OperationContext>))
+                                      .WithMethod(INIT_CALLBACKS_METHOD_NAME, m => m.WithParameter(typeof(Action<OperationContext>))
+                                                                                    .WithParameter(typeof(Action<OperationContext>))
+                                                                                    .Returns(typeof(void))
+                                                                                    .Ldarg(0)
+                                                                                    .Ldarg(1)
+                                                                                    .Stfld(BEFORE_OPERATION_CALLBACK_FIELD_NAME)
+                                                                                    .Ldarg(0)
+                                                                                    .Ldarg(2)
+                                                                                    .Stfld(AFTER_OPERATION_CALLBACK_FIELD_NAME)
+                                                                                    .Ret());
 
-            m_ConstructorParameters = new object[] { };
-
+            m_ConstructorParameters = new object[] { };            
             ImplementConstructor(m_ClientProxyTypeInfo,new Type[0]); //implement empty constructor                     
         }
 
@@ -129,14 +144,18 @@ namespace WcfClientFactory
             clientProxyMethod.WithParameters(methodParameters)
                              .WithVariable(m_ProxyClientChannelType, SERVICE_CLIENT_VARIABLE_NAME)
                              .WithVariable(interfaceMethodToProxy.ReturnType, METHOD_RESULT_VARIABLE_NAME)
+                             .WithVariable(typeof(OperationContext),OPERATION_CONTEXT_VARIABLE_NAME)
                              .WithVariable(typeof(OperationContextScope),OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
                              .Returns(interfaceMethodToProxy.ReturnType)
                              .Try(body: m => ClientProxyMethodBody(m,interfaceMethodToProxy),
                                   catches:IL.Catch<Exception>(m => m.Throw()),
-                                  @finally: m => m.Ldloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
+                                  @finally: m => m.Try(mc => mc.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                             .Call<ClientBase<TServiceInterface>>("Close"),
+                                                    IL.Catch<Exception>(mce => mce.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                                              .Call<ClientBase<TServiceInterface>>("Abort")))
+                                                  .Ldloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
                                                   .Call<IDisposable>("Dispose")
-                                                  .Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
-                                                  .Call<IDisposable>("Dispose")
+                                                  
                                    )
                              .Ldloc(METHOD_RESULT_VARIABLE_NAME)
                              .Ret();
@@ -146,6 +165,9 @@ namespace WcfClientFactory
         {
             var proxyClientClassConstructor = GetProxyClientConstructorInfo();
             var proxyClientClassConstructorParameters = proxyClientClassConstructor.Parameters().ToArray();
+            var invokeMethod = typeof(Action<OperationContext>).Method("Invoke",BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var oprerationContextCurrentGetMethod = typeof(OperationContext).Method("get_Current", BindingFlags.Static | BindingFlags.Public);
+
             CreateClientProxy(methodBody,
                               proxyClientClassConstructor,
                               proxyClientClassConstructorParameters)
@@ -154,12 +176,23 @@ namespace WcfClientFactory
                     .CallGet<ClientBase<TServiceInterface>>("InnerChannel")
                     .Newobj<OperationContextScope>(typeof(IContextChannel))
                     .Stloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
+                    .Call(oprerationContextCurrentGetMethod)
+                    .Stloc(OPERATION_CONTEXT_VARIABLE_NAME)
+                    .Ldarg(0)
+                    .Ldfld(BEFORE_OPERATION_CALLBACK_FIELD_NAME)
+                    .Ldloc(OPERATION_CONTEXT_VARIABLE_NAME)
+                    .Callvirt(invokeMethod)
                     .Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
                     .Callvirt(m_ClientChannelPropertyInfo.GetGetMethod())
                     .Repeater(1, methodInfoToImplement.Parameters().Count, 1,
                              (i, m) => m.Ldarg((uint)i))
                     .Callvirt(methodInfoToImplement)
-                    .Stloc(METHOD_RESULT_VARIABLE_NAME);
+                    .Stloc(METHOD_RESULT_VARIABLE_NAME)
+                    .Ldarg(0)
+                    .Ldfld(AFTER_OPERATION_CALLBACK_FIELD_NAME)
+                    .Ldloc(OPERATION_CONTEXT_VARIABLE_NAME)
+                    .Callvirt(invokeMethod);
+
         }
 
         private static DynamicMethodBody CreateClientProxy(

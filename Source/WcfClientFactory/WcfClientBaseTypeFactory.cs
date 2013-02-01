@@ -46,7 +46,7 @@ namespace WcfClientFactory
                                               .Ldarg(0)
                                               .Callvirt(getChannelMethod)
                                               .Ret())
-                                      .Repeater(typeof(ClientBase<TServiceInterface>).Constructors(),
+                                      .Repeater(typeof(TBaseClass).Constructors(),
                                             (constructorInfo, clientType) => ImplementConstructor(constructorInfo, clientType));
 
             m_ClientChannelType = clientChannelType.AsType;
