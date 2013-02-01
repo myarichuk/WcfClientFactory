@@ -3,8 +3,13 @@ Wcf Client Factory
 
 Introduction
 ------------
-WcfClientFactory is a WCF client proxy factory, that uses a class derived from ClientBase<T> to call the WCF service.
-
+WcfClientFactory is a WCF client proxy factory, that generates at emits at runtime a proxy client. The generated 
+proxy uses calls to Channel property of ClientBase<T> derived class to implement the service interface methods.<br/>
+Since .Net 3.5 there were [performance improvements in proxy client creation](http://blogs.msdn.com/b/wenlong/archive/2007/10/27/performance-improvement-of-wcf-client-proxy-creation-and-best-practices.aspx)
+that made usage of the following pattern for each web-service method feasible:<br/>
+1. new ClientBase<T> based proxy <br/>
+2. Call service method via ClientBase<T> Channel property <br/>
+3. Close connection <br/>
 
 Hello World example
 -------------------
