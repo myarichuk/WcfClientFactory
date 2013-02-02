@@ -147,21 +147,23 @@ namespace WcfClientFactory
                              .WithVariable(typeof(OperationContext),OPERATION_CONTEXT_VARIABLE_NAME)
                              .WithVariable(typeof(OperationContextScope),OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
                              .Returns(interfaceMethodToProxy.ReturnType)
-                             .Try(body: m => ClientProxyMethodBody(m,interfaceMethodToProxy),
-                                  catches:IL.Catch<Exception>(m => m.Throw()),
-                                  @finally: m => m.Try(mc => mc.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
-                                                             .Call<ClientBase<TServiceInterface>>("Close"),
-                                                    IL.Catch<Exception>(mce => mce.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
-                                                                              .Call<ClientBase<TServiceInterface>>("Abort")))
-                                                  .Ldloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
-                                                  .Call<IDisposable>("Dispose")
-                                                  
-                                   )
+                             .Try(/* body*/    m => ClientProxyMethodBody(m,interfaceMethodToProxy)
+                                                        .Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                        .Call<ClientBase<TServiceInterface>>("Close")
+                                                        .Ldloc(OPERATION_CONTEXT_SCOPE_VARIABLE_NAME)
+                                                        .Call<IDisposable>("Dispose"),
+                                /*catches*/    IL.Catch<CommunicationException>(mc => mc.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                                                  .Call<ClientBase<TServiceInterface>>("Abort")),
+                                               IL.Catch<TimeoutException>(mc => mc.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                                                  .Call<ClientBase<TServiceInterface>>("Abort")),
+                                               IL.Catch<Exception>(mc => mc.Ldloc(SERVICE_CLIENT_VARIABLE_NAME)
+                                                                           .Call<ClientBase<TServiceInterface>>("Abort")
+                                                                           .Throw()))
                              .Ldloc(METHOD_RESULT_VARIABLE_NAME)
                              .Ret();
         }
-
-        private void ClientProxyMethodBody(DynamicMethodBody methodBody, MethodInfo methodInfoToImplement)
+        
+        private DynamicMethodBody ClientProxyMethodBody(DynamicMethodBody methodBody, MethodInfo methodInfoToImplement)
         {
             var proxyClientClassConstructor = GetProxyClientConstructorInfo();
             var proxyClientClassConstructorParameters = proxyClientClassConstructor.Parameters().ToArray();
@@ -193,6 +195,7 @@ namespace WcfClientFactory
                     .Ldloc(OPERATION_CONTEXT_VARIABLE_NAME)
                     .Callvirt(invokeMethod);
 
+            return methodBody;
         }
 
         private static DynamicMethodBody CreateClientProxy(
