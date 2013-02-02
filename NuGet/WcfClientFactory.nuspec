@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>WcfClientFactory</id>
+    <version>1.0.0.0</version>
+    <title>Wcf Client Factory</title>
+    <authors>Michael Yarichuk</authors>
+    <owners>Michael Yarichuk</owners>
+    <projectUrl>https://github.com/myarichuk/WcfClientFactory</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Code library for creating runtime emitted Wcf proxy clients.</description>
+    <copyright>Copyright 2013, Michael Yarichuk</copyright>
+    <tags>Wcf Client Proxy</tags>
+  </metadata>
+  <files>
+    <file src="..\Binaries\WcfClientFactory.dll" target="lib\net40-client\WcfClientFactory.dll" />
+  </files>
+</package>

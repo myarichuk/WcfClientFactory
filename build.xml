@@ -1,21 +1,39 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Rebuild"> 
+  <Import Project="Utilities\MsBuild\MSBuild.Community.Tasks.Targets"/>
   <PropertyGroup> 
     <BuildDir>$(MSBuildProjectDirectory)\Binaries\</BuildDir>		
     <SourceDir>$(MSBuildProjectDirectory)\Source\</SourceDir>
     <LibrariesDir>$(MSBuildProjectDirectory)\Libraries\</LibrariesDir>
 	<UtilitiesDir>$(MSBuildProjectDirectory)\Utilities\</UtilitiesDir>
+	<NuGetDir>$(MSBuildProjectDirectory)\NuGet\</NuGetDir>
+    <NuGetApp>$(MSBuildProjectDirectory)\Utilities\NuGet\NuGet.exe</NuGetApp>
+    <WcfClientFactoryNuSpecFile>WcfClientFactory.nuspec</WcfClientFactoryNuSpecFile>	
+    <WcfClientFactoryNuSpecFileWithPath>$(NuGetDir)\$(WcfClientFactoryNuSpecFile)</WcfClientFactoryNuSpecFileWithPath>	
     <Configuration>Release</Configuration>
     <Platform>Any CPU</Platform>    
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <ItemGroup>
     <WcfClientFactoryProjectFile Include="$(SourceDir)\WcfClientFactory\WcfClientFactory.csproj" />
     <WcfClientFactoryWindsorFacilityFile Include="$(SourceDir)\WcfClientFactory.CastleWindsor\WcfClientFactory.CastleWindsor.csproj" />
 	<DependencyDLLs Include="$(LibrariesDir)\*.dll"/>
   </ItemGroup>
-
-  <Import Project="Utilities\MsBuild\MSBuild.Community.Tasks.Targets"/>
-
+  
+  <Target Name="NuGetPackWcfClientFactory" Condition="Exists($(WcfClientFactoryNuSpecFileWithPath))" DependsOnTargets="WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild">		
+    <GetAssemblyIdentity AssemblyFiles="@(WcfClientFactoryOutputs)">
+        <Output TaskParameter="Assemblies" ItemName="WcfClientFactoryAssemblyInfo" /> 
+    </GetAssemblyIdentity>
+		  
+	<XmlUpdate 
+      Namespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+      XmlFileName="$(WcfClientFactoryNuSpecFileWithPath)"
+      XPath="/package/metadata/version"
+      Value="%(WcfClientFactoryAssemblyInfo.Version)" />
+	  
+	<Exec WorkingDirectory="$(NuGetDir)"
+          Command="$(NuGetApp) pack $(WcfClientFactoryNuSpecFileWithPath)" /> 	  
+  </Target>
+  
   <Target Name="Clean">
     <MSBuild Projects="@(WcfClientFactoryWindsorFacilityFile)" Targets="Clean" 
 	Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(BuildDir)"/>
@@ -43,6 +61,6 @@
   </Target>
 
   <Target Name="Rebuild">
-    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild"></CallTarget>
+    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild; NuGetPackWcfClientFactory"></CallTarget>
   </Target>
 </Project>

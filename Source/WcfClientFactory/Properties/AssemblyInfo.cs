@@ -7,11 +7,11 @@ using System.Resources;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Wcf Client Factory")]
-[assembly: AssemblyDescription("Code library for creating Wcf proxy clients that inherit from ClientBase<>")]
+[assembly: AssemblyDescription("Code library for creating runtime generated Wcf proxy clients")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Wcf Client Factory")]
-[assembly: AssemblyCopyright("")]
+[assembly: AssemblyCopyright("Michael Yarichuk")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

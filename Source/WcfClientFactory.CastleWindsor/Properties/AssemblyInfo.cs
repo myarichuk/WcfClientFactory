@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("WcfClientFactory Castle Windsor Facility")]
-[assembly: AssemblyDescription("Castle Windsor Facility for creation of dynamic Wcf proxy clients")]
+[assembly: AssemblyDescription("Castle Windsor Facility for creation of runtime generated Wcf proxy clients")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Wcf Client Factory")]
-[assembly: AssemblyCopyright("")]
+[assembly: AssemblyCopyright("Michael Yarichuk")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
