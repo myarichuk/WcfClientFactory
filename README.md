@@ -11,6 +11,10 @@ that made usage of the following pattern for each web-service method feasible:<b
 2. Call service method via ClientBase<T> Channel property <br/>
 3. Close connection <br/>
 
+License
+--------
+Apache 2.0, see LICENSE
+
 Hello World example
 -------------------
 Assuming service interface
