@@ -1,0 +1,48 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Rebuild"> 
+  <PropertyGroup> 
+    <BuildDir>$(MSBuildProjectDirectory)\Binaries\</BuildDir>		
+    <SourceDir>$(MSBuildProjectDirectory)\Source\</SourceDir>
+    <LibrariesDir>$(MSBuildProjectDirectory)\Libraries\</LibrariesDir>
+	<UtilitiesDir>$(MSBuildProjectDirectory)\Utilities\</UtilitiesDir>
+    <Configuration>Release</Configuration>
+    <Platform>Any CPU</Platform>    
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WcfClientFactoryProjectFile Include="$(SourceDir)\WcfClientFactory\WcfClientFactory.csproj" />
+    <WcfClientFactoryWindsorFacilityFile Include="$(SourceDir)\WcfClientFactory.CastleWindsor\WcfClientFactory.CastleWindsor.csproj" />
+	<DependencyDLLs Include="$(LibrariesDir)\*.dll"/>
+  </ItemGroup>
+
+  <Import Project="Utilities\MsBuild\MSBuild.Community.Tasks.Targets"/>
+
+  <Target Name="Clean">
+    <MSBuild Projects="@(WcfClientFactoryWindsorFacilityFile)" Targets="Clean" 
+	Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(BuildDir)"/>
+    <MSBuild Projects="@(WcfClientFactoryProjectFile)" Targets="Clean" 
+	Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(BuildDir)"/>
+    <DeleteTree Directories="$(BuildDir)" ContinueOnError="true"/>
+  </Target>
+ 
+  <Target Name="WcfClientFactoryBuild">
+    <MSBuild Projects="@(WcfClientFactoryProjectFile)" BuildInParallel="true" Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(BuildDir)">
+		<Output ItemName="WcfClientFactoryOutputs" TaskParameter="TargetOutputs"/>	
+	</MSBuild>	
+  </Target>
+
+  <Target Name="WcfClientFactoryWindsorFacilityBuild" DependsOnTargets="WcfClientFactoryBuild">
+    <MSBuild Projects="@(WcfClientFactoryWindsorFacilityFile)" BuildInParallel="true" Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(BuildDir)"/>
+  </Target>
+  
+  <Target Name="WcfClientFactoryAfterBuild" DependsOnTargets="WcfClientFactoryBuild">
+	<Message Text="Merging assemblies with ILRepack..."/>
+	<Exec Command="copy @(WcfClientFactoryOutputs) $(BuildDir)\temp.dll"/>	
+	<Exec Command="$(UtilitiesDir)\ILRepack\ilrepack.exe /out:@(WcfClientFactoryOutputs) $(BuildDir)\temp.dll @(DependencyDLLs -> '%(rootdir)%(directory)%(filename)%(extension)',' ')"/>
+	<Exec Command="del $(BuildDir)\temp.dll"/>	
+	<Exec Command="del @(DependencyDLLs -> '$(BuildDir)\%(filename)%(extension)',' ')"/>
+  </Target>
+
+  <Target Name="Rebuild">
+    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild"></CallTarget>
+  </Target>
+</Project>
