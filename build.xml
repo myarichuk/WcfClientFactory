@@ -19,7 +19,7 @@
 	<DependencyDLLs Include="$(LibrariesDir)\*.dll"/>
   </ItemGroup>
   
-  <Target Name="NuGetPackWcfClientFactory" Condition="Exists($(WcfClientFactoryNuSpecFileWithPath))" DependsOnTargets="WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild">		
+  <Target Name="NuGetPackWcfClientFactory" Condition="Exists($(WcfClientFactoryNuSpecFileWithPath))">		
     <GetAssemblyIdentity AssemblyFiles="@(WcfClientFactoryOutputs)">
         <Output TaskParameter="Assemblies" ItemName="WcfClientFactoryAssemblyInfo" /> 
     </GetAssemblyIdentity>
@@ -29,7 +29,8 @@
       XmlFileName="$(WcfClientFactoryNuSpecFileWithPath)"
       XPath="/package/metadata/version"
       Value="%(WcfClientFactoryAssemblyInfo.Version)" />
-	  
+	
+	<Message Text="Creating NuGet package for WcfClientFactory project..."/>
 	<Exec WorkingDirectory="$(NuGetDir)"
           Command="$(NuGetApp) pack $(WcfClientFactoryNuSpecFileWithPath)" /> 	  
   </Target>
@@ -61,6 +62,6 @@
   </Target>
 
   <Target Name="Rebuild">
-    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild; NuGetPackWcfClientFactory"></CallTarget>
+    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild;"></CallTarget>
   </Target>
 </Project>
