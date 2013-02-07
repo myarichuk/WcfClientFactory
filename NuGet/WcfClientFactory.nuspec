@@ -10,7 +10,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Code library for creating runtime emitted Wcf proxy clients.</description>
     <copyright>Copyright 2013, Michael Yarichuk</copyright>
-    <tags>Wcf Client Proxy</tags>
+    <tags>Wcf Dynamic Client Proxy</tags>
   </metadata>
   <files>
     <file src="..\Binaries\WcfClientFactory.dll" target="lib\net40-client\WcfClientFactory.dll" />

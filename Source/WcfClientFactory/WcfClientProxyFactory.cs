@@ -5,6 +5,9 @@ using System.ServiceModel;
 
 namespace WcfClientFactory
 {
+    /// <summary>
+    /// proxy factory that emits at runtime WCF client proxies
+    /// </summary>
     public static class WcfClientProxyFactory
     {
         private readonly static Action<OperationContext> EmptyCallback = (oc) => { };
@@ -80,9 +83,12 @@ namespace WcfClientFactory
                                                     .GenerateType();
                         
             var clientInstance = (TServiceInterface)Activator.CreateInstance(proxyClientType, constructorParams);
-            clientInstance.CallMethod(WcfClientProxyTypeFactory<TServiceInterface, TBaseClass>.INIT_CALLBACKS_METHOD_NAME,
-                beforeOperationCallback,
-                afterOperationCallback);
+
+            var initCallbacksMethod = proxyClientType.Method(WcfClientProxyTypeFactory<TServiceInterface, TBaseClass>.INIT_CALLBACKS_METHOD_NAME);
+            if (initCallbacksMethod != null)
+            {
+                initCallbacksMethod.Invoke(clientInstance, new[] { beforeOperationCallback, afterOperationCallback });
+            }
 
             return clientInstance;
         }
