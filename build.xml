@@ -32,7 +32,7 @@
 	
 	<Message Text="Creating NuGet package for WcfClientFactory project..."/>
 	<Exec WorkingDirectory="$(NuGetDir)"
-          Command="$(NuGetApp) pack $(WcfClientFactoryNuSpecFileWithPath)" /> 	  
+          Command="$(NuGetApp) pack $(NuGetDir)\$(WcfClientFactoryNuSpecFile) -Verbose" /> 	  
   </Target>
   
   <Target Name="Clean">
@@ -62,6 +62,6 @@
   </Target>
 
   <Target Name="Rebuild">
-    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild;"></CallTarget>
+    <CallTarget Targets="Clean; WcfClientFactoryBuild; WcfClientFactoryWindsorFacilityBuild; WcfClientFactoryAfterBuild;NuGetPackWcfClientFactory;"></CallTarget>
   </Target>
 </Project>
